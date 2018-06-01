@@ -1,10 +1,9 @@
+from enum import Enum
 
-# --------------------------
-# prediction.prediction_lib
-# --------------------------
+
 class UserClassType(Enum):
-  model_class = "model_class"
-  processor_class = "processor_class"
+    model_class = "model_class"
+    processor_class = "processor_class"
 
 
 ENGINE = "Prediction-Engine"
@@ -39,4 +38,3 @@ SESSION_RUN_ENGINE_NAME = "TF_SESSION_RUN"
 MODEL_FILE_NAME_JOBLIB = "model.joblib"
 MODEL_FILE_NAME_PICKLE = "model.pkl"
 MODEL_FILE_NAME_BST = "model.bst"
-
