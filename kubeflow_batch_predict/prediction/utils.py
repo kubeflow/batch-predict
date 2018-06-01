@@ -7,7 +7,6 @@ import six
 from tensorflow.python.framework import dtypes
 from tensorflow.python.util import compat
 
-from kubeflow_batch_predict.prediction.base import PredictionError
 
 MICRO = 1000000
 MILLI = 1000
@@ -123,104 +122,6 @@ def columnarize(instances):
             columns[k].append(v)
     return columns
 
-
-def rowify(columns):
-    """Converts columnar input to row data.
-
-    Consider the following code:
-
-      columns = {"prediction": np.array([1,             # 1st instance
-                                         0,             # 2nd
-                                         1]),           # 3rd
-                 "scores": np.array([[0.1, 0.9],        # 1st instance
-                                     [0.7, 0.3],        # 2nd
-                                     [0.4, 0.6]])}      # 3rd
-
-    Then rowify will return the equivalent of:
-
-      [{"prediction": 1, "scores": [0.1, 0.9]},
-       {"prediction": 0, "scores": [0.7, 0.3]},
-       {"prediction": 1, "scores": [0.4, 0.6]}]
-
-    (each row is yielded; no list is actually created).
-
-    Arguments:
-      columns: (dict) mapping names to numpy arrays, where the arrays
-        contain a batch of data.
-
-    Raises:
-      PredictionError: if the outer dimension of each input isn't identical
-      for each of element.
-
-    Yields:
-      A map with a single instance, as described above. Note: instances
-      is not a numpy array.
-    """
-    sizes_set = {e.shape[0] for e in six.itervalues(columns)}
-
-    # All the elements in the length array should be identical. Otherwise,
-    # raise an exception.
-    if len(sizes_set) != 1:
-        sizes_dict = {name: e.shape[0] for name, e in six.iteritems(columns)}
-        raise PredictionError(
-            PredictionError.INVALID_OUTPUTS,
-            "Bad output from running tensorflow session: outputs had differing "
-            "sizes in the batch (outer) dimension. See the outputs and their "
-            "size: %s. Check your model for bugs that effect the size of the "
-            "outputs." % sizes_dict)
-    # Pick an arbitrary value in the map to get it's size.
-    num_instances = len(next(six.itervalues(columns)))
-    for row in six.moves.xrange(num_instances):
-        yield {
-            name: output[row, ...].tolist()
-            for name, output in six.iteritems(columns)
-        }
-
-
-def canonicalize_single_tensor_input(instances, tensor_name):
-    """Canonicalize single input tensor instances into list of dicts.
-
-    Instances that are single input tensors may or may not be provided with their
-    tensor name. The following are both valid instances:
-      1) instances = [{"x": "a"}, {"x": "b"}, {"x": "c"}]
-      2) instances = ["a", "b", "c"]
-    This function canonicalizes the input instances to be of type 1).
-
-    Arguments:
-      instances: single input tensor instances as supplied by the user to the
-        predict method.
-      tensor_name: the expected name of the single input tensor.
-
-    Raises:
-      PredictionError: if the wrong tensor name is supplied to instances.
-
-    Returns:
-      A list of dicts. Where each dict is a single instance, mapping the
-      tensor_name to the value (as supplied by the original instances).
-    """
-
-    # Input is a single string tensor, the tensor name might or might not
-    # be given.
-    # There are 3 cases (assuming the tensor name is "t", tensor = "abc"):
-    # 1) {"t": "abc"}
-    # 2) "abc"
-    # 3) {"y": ...} --> wrong tensor name is given.
-    def parse_single_tensor(x, tensor_name):
-        if not isinstance(x, dict):
-            # case (2)
-            return {tensor_name: x}
-        elif len(x) == 1 and tensor_name == list(x.keys())[0]:
-            # case (1)
-            return x
-        else:
-            raise PredictionError(PredictionError.INVALID_INPUTS,
-                                  "Expected tensor name: %s, got tensor name: %s." %
-                                  (tensor_name, list(x.keys())))
-
-    if not isinstance(instances, list):
-        instances = [instances]
-    instances = [parse_single_tensor(x, tensor_name) for x in instances]
-    return instances
 
 
 def decode_base64(data):

@@ -10,7 +10,8 @@ from tensorflow.python.saved_model import tag_constants
 
 from kubeflow_batch_predict.prediction import config, utils
 from kubeflow_batch_predict.prediction._interfaces import PredictionClient
-from kubeflow_batch_predict.prediction.base import PredictionError, BaseModel, _new_processor_class
+from kubeflow_batch_predict.prediction.base import PredictionError, BaseModel, _new_processor_class, rowify, \
+    canonicalize_single_tensor_input
 
 
 # TODO: when we no longer load the model to get the signature
@@ -198,7 +199,7 @@ class TensorFlowModel(BaseModel):
             return instances
 
         tensor_name = list(signature.inputs.keys())[0]
-        return utils.canonicalize_single_tensor_input(instances, tensor_name)
+        return canonicalize_single_tensor_input(instances, tensor_name)
 
     def postprocess(self, predicted_output, original_input=None, stats=None,
                     signature_name=None, **kwargs):
@@ -240,7 +241,7 @@ class TensorFlowModel(BaseModel):
                 alias: listify(val)
                 for alias, val in six.iteritems(predicted_output)
             }
-            postprocessed_outputs = utils.rowify(postprocessed_outputs)
+            postprocessed_outputs = rowify(postprocessed_outputs)
 
         postprocessed_outputs = list(postprocessed_outputs)
         if self._postprocess_fn:
@@ -336,7 +337,6 @@ class TensorFlowClient(PredictionClient):
                 "No signature found for signature key %s." % signature_name)
 
 
-# (TODO): Move this to a Tensorflow specific library.
 class SessionClient(TensorFlowClient):
     """A client for Prediction that uses Session.run."""
 
