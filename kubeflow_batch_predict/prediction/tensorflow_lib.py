@@ -371,3 +371,15 @@ class SessionClient(TensorFlowClient):
     with stats.time(ALIAS_TIME):
       return dict(zip(six.iterkeys(signature.outputs), outputs))
 
+def local_predict(
+    model_dir=None,
+    tags=(tag_constants.SERVING,),
+    signature_name=None,
+    instances=None,
+    framework=TENSORFLOW_FRAMEWORK_NAME):
+  """Run a prediction locally."""
+  instances = decode_base64(instances)
+  client = create_client(framework, model_dir, tags)
+  model = create_model(client, model_dir, framework)
+  _, predictions = model.predict(instances, signature_name=signature_name)
+  return {"predictions": list(predictions)}
