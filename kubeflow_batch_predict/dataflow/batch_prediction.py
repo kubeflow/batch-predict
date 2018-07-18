@@ -122,6 +122,8 @@ class PredictionDoFn(beam.DoFn):
                skip_preprocessing=False,
                target="",
                config=None,
+               instances_key='instances',
+               predictions_key='predictions',
                framework=mlprediction.TENSORFLOW_FRAMEWORK_NAME):
     """Constructor of Prediction beam.DoFn class.
 
@@ -156,6 +158,8 @@ class PredictionDoFn(beam.DoFn):
     self._config = config
     self._aggregator_dict = aggregator_dict
     self._model_state = None
+    self._instances_key = instances_key
+    self._predictions_key = predictions_key
 
 
     self._tag_list = []
@@ -208,7 +212,7 @@ class PredictionDoFn(beam.DoFn):
       else:
         loaded_data = [json.loads(d) for d in element]
       loaded_data = mlprediction.decode_base64(loaded_data)
-      instances = loaded_data['instances']
+      instances = loaded_data[self._instances_key]
 
       # Actual prediction occurs.
       kwargs = {}
@@ -228,7 +232,7 @@ class PredictionDoFn(beam.DoFn):
           td.microseconds / 10**3  + (td.seconds + td.days * 24 * 3600) * 10**3)
       self._batch_process_ms_distribution.update(time_delta_in_ms)
 
-      loaded_data['predictions'] = predictions
+      loaded_data[self._predictions_key] = predictions
       yield loaded_data
 
     except mlprediction.PredictionError as e:
