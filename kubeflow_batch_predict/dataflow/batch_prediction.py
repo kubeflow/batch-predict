@@ -167,13 +167,19 @@ class PredictionDoFn(beam.DoFn):
         _METRICS_NAMESPACE, "batch_process_milliseconds")
 
   def start_bundle(self):
+    if isinstance(self._signature_name, ValueProvider):
+      self._signature_name = self._signature_name.get()
+
+    if isinstance(self._tags, ValueProvider):
+      self._tags = self._tags.get()
+
     self._tag_list = self._tags.split(",")
 
   def process(self, element, model_dir):
     try:
       if isinstance(model_dir, ValueProvider):
         model_dir = model_dir.get()
-      framework = self._framework
+      framework = self._framework.get() if isinstance(self._framework, ValueProvider) else self._framework
       if self._model_state is None:
         if (getattr(self._thread_local, "model_state", None) is None or
             self._thread_local.model_state.model_dir != model_dir):
