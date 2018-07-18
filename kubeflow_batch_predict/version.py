@@ -15,7 +15,7 @@
 """
 
 # Google Cloud Machine Learning Prediction Engine Version info.
-__version__ = '0.1-alpha'
+__version__ = '0.1-alpha2'
 
 required_install_packages = [
     'oauth2client >= 2.2.0',
