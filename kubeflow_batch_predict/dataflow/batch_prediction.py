@@ -207,7 +207,9 @@ class PredictionDoFn(beam.DoFn):
           loaded_data = [json.loads(d) for d in element]
       else:
         loaded_data = [json.loads(d) for d in element]
-      instances = mlprediction.decode_base64(loaded_data)
+      loaded_data = mlprediction.decode_base64(loaded_data)
+      instances = loaded_data['instances']
+
       # Actual prediction occurs.
       kwargs = {}
       if self._signature_name:
@@ -226,8 +228,8 @@ class PredictionDoFn(beam.DoFn):
           td.microseconds / 10**3  + (td.seconds + td.days * 24 * 3600) * 10**3)
       self._batch_process_ms_distribution.update(time_delta_in_ms)
 
-      for i, p in zip(inputs, predictions):
-        yield i, p
+      loaded_data['predictions'] = predictions
+      yield loaded_data
 
     except mlprediction.PredictionError as e:
       logging.error("Got a known exception: [%s]\n%s", str(e),
