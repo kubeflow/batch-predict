@@ -31,6 +31,6 @@ required_install_packages = [
 ]
 
 required_install_packages_with_batch_prediction = required_install_packages + [
-    'apache-beam[gcp] >= 2.0.0, < 2.4.0',
+    'apache-beam[gcp] >= 2.5.0',
 ]
 
