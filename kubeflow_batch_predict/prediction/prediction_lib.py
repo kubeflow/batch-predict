@@ -445,9 +445,35 @@ def load_model(
                             "Failed to load the model due to bad model data."
                             " tags: %s\n%s" % (list(tags), str(e)))
   else:
-    raise PredictionError(PredictionError.FAILED_TO_LOAD_MODEL,
-                          "Cloud ML only supports TF 1.0 or above and models "
-                          "saved in SavedModel format.")
+    import tensorflow as tf
+    from tensorflow.python.framework.meta_graph import create_meta_graph_def
+    graph = tf.Graph()
+    with graph.as_default():
+        with open(model_path, "rb") as f:
+            graph_def = tf.GraphDef()
+            graph_def.ParseFromString(f.read())
+            tf.import_graph_def(graph_def, name="")
+    inputs= dict()
+    outputs = dict()
+    outputs_that_are_inputs = dict()
+    for op in graph.get_operations():
+      for inp in op.inputs:
+        outputs_that_are_inputs[inp.name.split(":")[0]]=True
+    for op in graph.get_operations():
+      if len(op.inputs) == 0:
+        for tensor in op.outputs:
+          inputs[tensor.name] = tf.saved_model.utils.build_tensor_info(tensor)
+      elif op.name not in outputs_that_are_inputs:
+        for tensor in op.outputs:
+          outputs[tensor.name] = tf.saved_model.utils.build_tensor_info(tensor)
+    meta_graph = create_meta_graph_def(graph=graph)
+    key = os.path.splitext(os.path.basename(model_path))[0]
+    signature_def = tf.saved_model.signature_def_utils.build_signature_def(
+        inputs=inputs,
+        outputs=outputs,
+        method_name=tf.saved_model.signature_constants.PREDICT_METHOD_NAME)
+    meta_graph.signature_def[key].CopyFrom(signature_def)
+    session = tf_session.Session(target="", graph=graph, config=config)
 
   if session is None:
     raise PredictionError(PredictionError.FAILED_TO_LOAD_MODEL,
