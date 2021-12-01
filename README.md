@@ -1,6 +1,6 @@
 ## :warning: **kubeflow/batch-predict is not maintained**
 
-This repository has been deprecated, and will be [archived](https://github.com/kubeflow/community/issues/479) soon (Nov 30th, 2021). 
+This repository has been deprecated and [archived](https://github.com/kubeflow/community/issues/479) on Nov 30th, 2021. 
 
 # Batch-predict
 
